@@ -1,4 +1,10 @@
-# coding: UTF-8
+# -*- coding:utf-8 -*-
+#
+#   Author  :   寒江雪
+#   E-mail  :
+#   Date    :   19/10/10 00:03:44
+#   Desc    :
+#
 from __future__ import print_function
 
 import tensorflow as tf
@@ -29,30 +35,26 @@ class QValueEvaluation(object):
     def __init__(self, scope='estimator', log_dir=None, config=Config):
         self.scope = scope
         self.summary_writer = None
+        self.config = config
         with tf.variable_scope(scope):
             self.build_graph()
             if log_dir:
                 summary_dir = os.path.join(log_dir, scope)
-                os.makedirs(summary_dir, exist_ok=True)
+                os.makedirs(summary_dir)
                 self.summary_writer = tf.summary.FileWriter(summary_dir)
-        self.config = config
 
-    @classmethod
-    def weight_variable(shape):
+    def weight_variable(self, shape):
         initial = tf.truncated_normal(shape, stddev = 0.01)
         return tf.Variable(initial)
 
-    @classmethod
-    def bias_variable(shape):
+    def bias_variable(self, shape):
         initial = tf.constant(0.01, shape = shape)
         return tf.Variable(initial)
 
-    @classmethod
-    def conv2d(x, W, stride):
+    def conv2d(slef, x, W, stride):
         return tf.nn.conv2d(x, W, strides = [1, stride, stride, 1], padding = "SAME")
 
-    @classmethod
-    def max_pool_2x2(x):
+    def max_pool_2x2(self, x):
         return tf.nn.max_pool(x, ksize = [1, 2, 2, 1], strides = [1, 2, 2, 1], padding = "SAME")
 
     def build_graph(self):
@@ -74,7 +76,7 @@ class QValueEvaluation(object):
 
         self.s = tf.placeholder("float", [None, 80, 80, 4])
 
-        h_conv1 = tf.nn.relu(self.conv2d(s, W_conv1, 4) + b_conv1)
+        h_conv1 = tf.nn.relu(self.conv2d(self.s, W_conv1, 4) + b_conv1)
         h_pool1 = self.max_pool_2x2(h_conv1)
 
         h_conv2 = tf.nn.relu(self.conv2d(h_pool1, W_conv2, 2) + b_conv2)
@@ -140,7 +142,7 @@ def preprocess_state(x_t):
 
 
 def train_dqn(sess, q_value_evaluation, target_q_value_evaluation, model_dir=None,
-              fix_target=True, pretrained_model_dir=None, assign_ops):
+              fix_target=True, pretrained_model_dir=None, assign_ops=None):
     # 开始游戏
     game_state = game.GameState()
     # 存储样本
@@ -261,3 +263,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
