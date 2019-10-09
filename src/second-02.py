@@ -7,6 +7,7 @@
 # coding: UTF-8
 
 import random
+import json
 
 class GridExample:
     def __init__(self):
@@ -74,13 +75,14 @@ class GridExample:
                 k += 1
         return 4 * j + k + 1
 
-    def qlearning(self, inter_num, epsilon, gamma):
-        qfunc = dict()  # 动作值函数
+    def qlearning(self, inter_num, epsilon, gamma, alpha):
+        #qfunc = dict()  # 动作值函数
         # 初始化行为值函数为0
         for s in self.states:
             for a in self.actions:
                 key = "%d_%s" % (s, a)
-                qfunc[key] = 0.0
+                self.qfunc[key] = 0.0
+                print key
         count_s_a = dict()
         for i in range(inter_num):
             s_sample = []
@@ -90,7 +92,7 @@ class GridExample:
             is_terminate = False
             count = 0
             while not is_terminate and count < 400:
-                a = self.epsilon_greedy(qfunc, s, epsilon)
+                a = self.epsilon_greedy(self.qfunc, s, epsilon)
                 is_terminate, c_s, r = self.transfrom(s, a)
                 s_sample.append(s)
                 a_sample.append(a)
@@ -99,19 +101,20 @@ class GridExample:
                 count += 1
             # 更新动作值函数
             g = 0.0
-            for j in range(len(s_sample), -1, -1):
+            for j in range(len(s_sample)-1, -1, -1):
                 g *= gamma
-                g += r_sample[i]
+                g += r_sample[j]
 
             for j in range(len(s_sample)):
                 key = "%d_%s" % (s_sample[j], a_sample[j])
                 if key not in count_s_a:
                     count_s_a[key] = 0
                 count_s_a[key] += 1
-                qfunc[key] = (qfunc[key]*(count_s_a[key]-1) + g) /count_s_a[key]
-                g -= r_sample[i]
+                self.qfunc[key] = self.qfunc[key] + (g - self.qfunc[key])*1.0/count_s_a[key]
+                #qfunc[key] = (qfunc[key]*(count_s_a[key]-1) + g) /count_s_a[key]
+                g -= r_sample[j]
                 g /= gamma
-        return qfunc
+        return self.qfunc
 
 
     #  贪婪策略
@@ -152,49 +155,60 @@ class GridExample:
         return self.actions[len(self.actions) - 1]
 
     def qlearning_td(self, inter_num, epsilon, gamma, alpha):
-        qfunc = dict()  # 动作值函数
+        # qfunc = dict()  # 动作值函数
         # 初始化行为值函数为0
         for s in self.states:
             for a in self.actions:
                 key = "%d_%s" % (s, a)
-                qfunc[key] = 0.0
+                self.qfunc[key] = 0.0
         for i in range(inter_num):
             s = self.states[int(random.random() * len(self.states))]
             is_terminate = False
             count = 0
             while not is_terminate and count < 400:
-                a = self.epsilon_greedy(qfunc, s, epsilon)
+                a = self.epsilon_greedy(self.qfunc, s, epsilon)
                 is_terminate, c_s, r = self.transfrom(s, a)
                 key = "%d_%s" % (s, a)
                 if is_terminate:
-                    qfunc[key] = qfunc[key] + alpha * (r - qfunc[key])
+                    self.qfunc[key] = self.qfunc[key] + alpha * (r - self.qfunc[key])
                 else:
-                    a_max = self.greedy(qfunc, c_s)
+                    a_max = self.greedy(self.qfunc, c_s)
                     key1 = "%d_%s" % (c_s, a_max)
-                    qfunc[key] = qfunc[key] + alpha*(r +
-                             gamma*qfunc[key1] - qfunc[key])
+                    self.qfunc[key] = self.qfunc[key] + alpha*(r +
+                             gamma*self.qfunc[key1] - self.qfunc[key])
                 s = c_s
                 count += 1
-        return qfunc
+        return self.qfunc
 
     def route(self, s, inter_num):
         route = list()
         for i in range(inter_num):
             is_terminate = False
             count = 0
-            while not is_terminate and count < 400:
-                a = self.epsilon_greedy(qfunc, s, 0)
+            while not is_terminate and count < 16:
+                a = self.epsilon_greedy(self.qfunc, s, 0)
                 is_terminate, c_s, r = self.transfrom(s, a)
                 route.append([s, a])
                 if is_terminate:
                     return route
                 s = c_s
                 count += 1
+        return route
+
+    def save(self, path):
+        with open(path, "w") as fopen:
+            json.dump(self.qfunc, fopen, ensure_ascii=False)
+
+    def load(self, path):
+        with open(path, "r") as fopen:
+            self.qfunc = json.load(fopen)
 
 
 if __name__ == "__main__":
     g = GridExample()
-    qfunc = g.qlearning_td(100000, 0.1, 0.8, 0.01)
+    #qfunc = g.qlearning_td(100000, 0.1, 0.8, 0.01)
+    qfunc = g.qlearning(10000000, 0.1, 0.8, 0.001)
+    g.save("model.txt")
+    #g.load("model.txt")
     print g.route(4, 400)
     print qfunc
-
