@@ -5,6 +5,11 @@
 #   Date    :   19/11/09 21:03:30
 #   Desc    : 使用DDPG的方法玩flappy bird
 #
+"""
+Dependencies:
+tensorflow r1.14
+pygame 1.9.4
+"""
 from __future__ import print_function
 
 import tensorflow as tf
