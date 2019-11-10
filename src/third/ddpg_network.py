@@ -108,7 +108,7 @@ class QValueEvaluation(object):
         self.scope = scope
         self.summary_writer = None
         self.config = config
-        with tf.variable_scope(scope, actor):
+        with tf.variable_scope(scope):
             self.a = self.build_graph(actor)
 
     def weight_variable(self, shape):
